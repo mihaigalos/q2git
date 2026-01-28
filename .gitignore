@@ -1,0 +1,38 @@
+# Generated code and build artifacts
+gen/*
+build/*
+*.wasm
+wit/deps/
+
+# Go build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Go test artifacts
+*.test
+*.out
+coverage.txt
+*.prof
+
+# Dependency directories
+vendor/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# wasmCloud specific
+.wash/
+*.log
+
+# Environment files
+.env
+.env.local
+*.key
+*.pem
