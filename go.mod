@@ -1,4 +1,4 @@
-module hellotinygo-wasmcloud
+module q2git
 
 go 1.24.0
 

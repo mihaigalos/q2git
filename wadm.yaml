@@ -1,7 +1,7 @@
 apiVersion: core.oam.dev/v1beta1
 kind: Application
 metadata:
-  name: "hellotinygo-wasmcloud"
+  name: "q2git"
   annotations:
     description: "HTTP hello world demo in Golang (TinyGo), using the WebAssembly Component Model and WebAssembly Interfaces Types (WIT)"
     wasmcloud.dev/authors: wasmCloud team
@@ -15,7 +15,7 @@ spec:
     - name: http-component
       type: component
       properties:
-        image: "file://./build/hellotinygo-wasmcloud_s.wasm"
+        image: "file://./build/q2git_s.wasm"
       traits:
         # Govern the spread/scheduling of the component
         - type: spreadscaler

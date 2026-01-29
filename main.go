@@ -49,7 +49,7 @@ func handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	response := map[string]interface{}{
 		"status":  "healthy",
-		"service": "hellotinygo-wasmcloud",
+		"service": "q2git",
 		"uptime":  "running",
 	}
 	json.NewEncoder(w).Encode(response)
@@ -98,7 +98,7 @@ func handleTime(w http.ResponseWriter, r *http.Request) {
 func handleStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	response := map[string]interface{}{
-		"application": "hellotinygo-wasmcloud",
+		"application": "q2git",
 		"version":     "1.0.0",
 		"runtime":     "TinyGo + wasmCloud",
 		"status":      "operational",
