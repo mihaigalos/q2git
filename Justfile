@@ -23,7 +23,7 @@ deploy: build
 
 # Undeploy the application
 undeploy:
-    wash app undeploy hellotinygo-wasmcloud
+    wash app undeploy q2git
 
 # Redeploy (undeploy + deploy)
 redeploy: undeploy deploy
@@ -45,7 +45,7 @@ test:
 
 # Get detailed app status
 status:
-    wash app get hellotinygo-wasmcloud
+    wash app get q2git
 
 # View wasmCloud host logs
 logs:

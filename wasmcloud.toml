@@ -1,4 +1,4 @@
-name = "hellotinygo-wasmcloud"
+name = "q2git"
 language = "tinygo"
 type = "component"
 version = "0.1.0"
