@@ -1,8 +1,7 @@
-package main
+package src
 
 import (
 	"bytes"
-	_ "embed"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -11,157 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/itchyny/gojq"
 	"go.wasmcloud.dev/component/net/wasihttp"
-	"gopkg.in/yaml.v3"
 )
-
-//go:embed config.yaml
-var embeddedConfig string
-
-//go:embed secrets.yaml
-var embeddedSecrets string
-
-// Config represents the q2git configuration
-type Config struct {
-	Source SourceConfig `yaml:"source"`
-	Query  string       `yaml:"query"`
-	Git    GitConfig    `yaml:"git"`
-}
-
-// SourceConfig represents the data source configuration
-type SourceConfig struct {
-	URL     string            `yaml:"url"`
-	Method  string            `yaml:"method"`
-	Headers map[string]string `yaml:"headers"`
-	Auth    AuthConfig        `yaml:"auth"`
-}
-
-// AuthConfig represents authentication configuration
-type AuthConfig struct {
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
-}
-
-// GitConfig represents git repository configuration
-type GitConfig struct {
-	APIURL        string `yaml:"api_url"`
-	Owner         string `yaml:"owner"`
-	Repo          string `yaml:"repo"`
-	Branch        string `yaml:"branch"`
-	OutputPath    string `yaml:"output_path"`
-	CommitMessage string `yaml:"commit_message"`
-	Token         string `yaml:"token"`
-}
-
-// Secrets represents the secrets.yaml structure
-type Secrets struct {
-	Source struct {
-		Username string `yaml:"username"`
-		Password string `yaml:"password"`
-	} `yaml:"source"`
-	Git struct {
-		Token string `yaml:"token"`
-	} `yaml:"git"`
-}
-
-// LoadConfig loads configuration from embedded config.yaml and secrets.yaml
-func LoadConfig() (*Config, error) {
-	// Load main configuration
-	var config Config
-	if err := yaml.Unmarshal([]byte(embeddedConfig), &config); err != nil {
-		return nil, fmt.Errorf("failed to parse embedded config: %w", err)
-	}
-
-	// Load and merge secrets
-	var secrets Secrets
-	if err := yaml.Unmarshal([]byte(embeddedSecrets), &secrets); err != nil {
-		return nil, fmt.Errorf("failed to parse embedded secrets: %w", err)
-	}
-
-	// Merge secrets into config
-	if secrets.Source.Username != "" {
-		config.Source.Auth.Username = secrets.Source.Username
-	}
-	if secrets.Source.Password != "" {
-		config.Source.Auth.Password = secrets.Source.Password
-	}
-	if secrets.Git.Token != "" {
-		config.Git.Token = secrets.Git.Token
-	}
-
-	return &config, nil
-}
-
-// FetchData fetches data from the configured source
-func FetchData(cfg *SourceConfig) ([]byte, error) {
-	req, err := http.NewRequest(cfg.Method, cfg.URL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	// Add headers
-	for key, value := range cfg.Headers {
-		req.Header.Set(key, value)
-	}
-
-	// Add basic auth if configured
-	if cfg.Auth.Username != "" && cfg.Auth.Password != "" {
-		req.SetBasicAuth(cfg.Auth.Username, cfg.Auth.Password)
-	}
-
-	// Use wasmCloud's HTTP client which works in WASM
-	client := &http.Client{
-		Transport: &wasihttp.Transport{
-			ConnectTimeout: 30 * time.Second,
-		},
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch data: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(body))
-	}
-
-	return io.ReadAll(resp.Body)
-}
-
-// ExecuteQuery executes a jq query on the input data
-func ExecuteQuery(query string, data []byte) ([]byte, error) {
-	// Parse the jq query
-	jqQuery, err := gojq.Parse(query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse jq query: %w", err)
-	}
-
-	// Unmarshal input data
-	var input interface{}
-	if err := json.Unmarshal(data, &input); err != nil {
-		return nil, fmt.Errorf("failed to parse input JSON: %w", err)
-	}
-
-	// Execute the query
-	var results []interface{}
-	iter := jqQuery.Run(input)
-	for {
-		v, ok := iter.Next()
-		if !ok {
-			break
-		}
-		if err, ok := v.(error); ok {
-			return nil, fmt.Errorf("query execution error: %w", err)
-		}
-		results = append(results, v)
-	}
-
-	// Marshal results back to JSON
-	return json.MarshalIndent(results, "", "  ")
-}
 
 // CommitToGit commits the results to a git repository using GitHub API
 func CommitToGit(cfg *GitConfig, content []byte) error {
