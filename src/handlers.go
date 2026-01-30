@@ -8,90 +8,74 @@ import (
 	"strings"
 )
 
-// HandleExecuteQuery endpoint - executes the configured query and commits to git
 func HandleExecuteQuery(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "Method not allowed. Use POST",
-		})
+		writeJSONError(w, http.StatusMethodNotAllowed, "Method not allowed. Use POST", "")
 		return
 	}
 
-	// Load configuration
 	config, err := LoadConfig()
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error":   "Configuration error",
-			"message": err.Error(),
-		})
+		writeJSONError(w, http.StatusInternalServerError, "Configuration error", err.Error())
 		return
 	}
 
-	// Fetch data from source
 	data, err := FetchData(&config.Source)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error":   "Failed to fetch data",
-			"message": err.Error(),
-		})
+		writeJSONError(w, http.StatusInternalServerError, "Failed to fetch data", err.Error())
 		return
 	}
 
-	// Execute jq query
 	results, err := ExecuteQuery(config.Query, data)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{
-			"error":   "Query execution failed",
-			"message": err.Error(),
-		})
+		writeJSONError(w, http.StatusInternalServerError, "Query execution failed", err.Error())
 		return
 	}
 
-	// Check if we should commit to git (query parameter)
 	shouldCommit := r.URL.Query().Get("commit") == "true"
 
 	if shouldCommit {
-		// Commit results to git
 		if err := CommitToGit(&config.Destination, results); err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error":   "Failed to commit to git",
-				"message": err.Error(),
-			})
+			writeJSONError(w, http.StatusInternalServerError, "Failed to commit to git", err.Error())
 			return
 		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"status":  "success",
-			"message": "Query executed and results committed to git",
-			"repo":    fmt.Sprintf("%s/%s", config.Destination.Owner, config.Destination.Repo),
-			"branch":  config.Destination.Branch,
-			"path":    config.Destination.OutputPath,
-		})
+		writeCommitSuccess(w, config)
 	} else {
-		// Return results without committing
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write(results)
+		writeJSONRaw(w, results)
 	}
 }
 
-// HandleRoot endpoint - returns a welcome message
+func writeJSONError(w http.ResponseWriter, status int, error, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	response := map[string]string{"error": error}
+	if message != "" {
+		response["message"] = message
+	}
+	json.NewEncoder(w).Encode(response)
+}
+
+func writeJSONRaw(w http.ResponseWriter, data []byte) {
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(data)
+}
+
+func writeCommitSuccess(w http.ResponseWriter, config *Config) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":  "success",
+		"message": "Query executed and results committed to git",
+		"repo":    fmt.Sprintf("%s/%s", config.Destination.Owner, config.Destination.Repo),
+		"branch":  config.Destination.Branch,
+		"path":    config.Destination.OutputPath,
+	})
+}
+
 func HandleRoot(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	_, _ = fmt.Fprintf(w, "Hello from TinyGo WebAssembly on wasmCloud! 🚀\n")
 }
 
-// HandleHealth endpoint - returns application health status
 func HandleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	response := map[string]interface{}{
@@ -102,7 +86,6 @@ func HandleHealth(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// HandleStatus endpoint - returns detailed application status
 func HandleStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	response := map[string]interface{}{
@@ -120,7 +103,6 @@ func HandleStatus(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// HandleNotFound endpoint - returns 404 for unknown paths
 func HandleNotFound(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusNotFound)
@@ -132,7 +114,6 @@ func HandleNotFound(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// Allow reading request body
 func readRequestBody(r *http.Request) ([]byte, error) {
 	if r.Body == nil {
 		return nil, nil
