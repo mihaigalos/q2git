@@ -4,21 +4,19 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
-	"time"
 
 	"go.wasmcloud.dev/component/net/wasihttp"
 )
 
 // Router maps paths to their handler functions
 var router = map[string]http.HandlerFunc{
-	"/":           handleRoot,
-	"/health":     handleHealth,
-	"/api/greet":  handleGreet,
-	"/api/echo":   handleEcho,
-	"/api/time":   handleTime,
-	"/api/status": handleStatus,
+	"/":            handleRoot,
+	"/health":      handleHealth,
+	"/api/status":  handleStatus,
+	"/api/execute": handleExecuteQuery,
 }
 
 func init() {
@@ -55,45 +53,6 @@ func handleHealth(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// Greet endpoint - greets a user by name from query parameter
-func handleGreet(w http.ResponseWriter, r *http.Request) {
-	name := r.URL.Query().Get("name")
-	if name == "" {
-		name = "World"
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	response := map[string]string{
-		"message": fmt.Sprintf("Hello, %s! Welcome to wasmCloud with TinyGo!", name),
-		"name":    name,
-	}
-	json.NewEncoder(w).Encode(response)
-}
-
-// Echo endpoint - echoes back request information
-func handleEcho(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	response := map[string]interface{}{
-		"method": r.Method,
-		"path":   r.URL.Path,
-		"query":  r.URL.RawQuery,
-		"host":   r.Host,
-	}
-	json.NewEncoder(w).Encode(response)
-}
-
-// Time endpoint - returns current server time
-func handleTime(w http.ResponseWriter, r *http.Request) {
-	now := time.Now()
-	w.Header().Set("Content-Type", "application/json")
-	response := map[string]interface{}{
-		"timestamp": now.Unix(),
-		"iso8601":   now.Format(time.RFC3339),
-		"timezone":  "UTC",
-	}
-	json.NewEncoder(w).Encode(response)
-}
-
 // Status endpoint - returns detailed application status
 func handleStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -105,13 +64,96 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
 		"endpoints": []string{
 			"/",
 			"/health",
-			"/api/greet",
-			"/api/echo",
-			"/api/time",
 			"/api/status",
+			"/api/execute",
 		},
 	}
 	json.NewEncoder(w).Encode(response)
+}
+
+// ExecuteQuery endpoint - executes the configured query and commits to git
+func handleExecuteQuery(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "Method not allowed. Use POST",
+		})
+		return
+	}
+
+	// Load configuration
+	config, err := LoadConfig()
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error":   "Configuration error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// Fetch data from source
+	data, err := FetchData(&config.Source)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error":   "Failed to fetch data",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// Execute jq query
+	results, err := ExecuteQuery(config.Query, data)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error":   "Query execution failed",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// Check if we should commit to git (query parameter)
+	shouldCommit := r.URL.Query().Get("commit") == "true"
+
+	if shouldCommit {
+		// Commit results to git
+		if err := CommitToGit(&config.Git, results); err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error":   "Failed to commit to git",
+				"message": err.Error(),
+			})
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status":  "success",
+			"message": "Query executed and results committed to git",
+			"repo":    fmt.Sprintf("%s/%s", config.Git.Owner, config.Git.Repo),
+			"branch":  config.Git.Branch,
+			"path":    config.Git.OutputPath,
+		})
+	} else {
+		// Return results without committing
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(results)
+	}
+}
+
+// Allow reading request body
+func readRequestBody(r *http.Request) ([]byte, error) {
+	if r.Body == nil {
+		return nil, nil
+	}
+	return io.ReadAll(r.Body)
 }
 
 // NotFound endpoint - returns 404 for unknown paths

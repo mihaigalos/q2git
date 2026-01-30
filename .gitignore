@@ -36,3 +36,6 @@ vendor/
 .env.local
 *.key
 *.pem
+
+# Secrets - DO NOT COMMIT
+secrets.yaml
