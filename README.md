@@ -1,38 +1,57 @@
-# HTTP Hello World
+# q2git
 
-This is a simple TinyGo Wasm example that responds with a "Hello World" message for each request.
+`q2git` is a wasmCloud application which queries a remote api and commits results to git.
 
-## Prerequisites
+`jq` is used internally to mutate results before committing.
 
-- `go` 1.23
-- `tinygo` 0.33
-- [`wash`](https://wasmcloud.com/docs/installation) 0.35.0
-- `wasmtime` 25.0.0 (if running with wasmtime)
+## Configuration Files
 
-## Building
+Two configuration files that are embedded into the WASM binary at build time: **config.yaml** and **secrets.yaml**.
 
-```bash
-wash build
-```
-
-## Running with wasmtime
-
-You must have wasmtime 25.0.0 for this to work. Make sure to follow the build step above first.
+## Usage
 
 ```bash
-wasmtime serve -Scommon ./build/http_hello_world_s.wasm
+just build
+just deploy
+```
+## Testing
+
+```bash
+curl -X POST http://localhost:8000/api/execute # Execute query without committing
+curl -X POST "http://localhost:8000/api/execute?commit=true" # Execute and commit to git
 ```
 
-## Running with wasmCloud
+## Example config
 
-Make sure to follow the build steps above, and replace the file path in [the wadm manifest](./wadm.yaml) with the absolute path to your local built component.
+### config.yaml
 
-```shell
-wash up -d
-wash app deploy ./wadm.yaml
-curl http://localhost:8000
+```yaml
+source:
+  url: "https://api.github.com/repos/owner/repo/issues"
+  method: "GET"
+  headers:
+    User-Agent: "q2git/1.0"
+    Accept: "application/json"
+
+query: |
+  .[] | {number: .number, title: .title, state: .state}
+
+git:
+  api_url: "https://api.github.com"
+  owner: "your-username"
+  repo: "your-repo"
+  branch: "main"
+  output_path: "query-results/data.json"
+  commit_message: "Update query results from {{.Timestamp}}"
 ```
 
-## Adding Capabilities
+### secrets.yaml (do not commit)
 
-To learn how to extend this example with additional capabilities, see the [Adding Capabilities](https://wasmcloud.com/docs/tour/adding-capabilities?lang=tinygo) section of the wasmCloud documentation.
+```yaml
+source:
+  username: ""
+  password: ""
+
+git:
+  token: "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+```

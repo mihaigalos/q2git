@@ -36,11 +36,8 @@ list:
 test:
     @echo "\nTesting root endpoint..." && curl http://localhost:8000
     @echo "\nTesting health endpoint..." && curl http://localhost:8000/health
-    @echo "\nTesting greet endpoint..." && curl 'http://localhost:8000/api/greet?name=Alice'
-    @echo "\nTesting echo endpoint..." && curl http://localhost:8000/api/echo
-    @echo "\nTesting time endpoint..." && curl http://localhost:8000/api/time
     @echo "\nTesting status endpoint..." && curl http://localhost:8000/api/status
-    @echo "\nTesting 404 response..." && curl http://localhost:8000/unknown
+    @echo "\nTesting execute endpoint (dry-run)..." && curl -X POST http://localhost:8000/api/execute
     @echo "\n"
 
 # Get detailed app status

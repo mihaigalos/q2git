@@ -1,0 +1,23 @@
+# q2git Configuration
+# Non-sensitive configuration - safe to commit to git
+
+# Data source configuration
+source:
+  url: "https://api.github.com/repos/octocat/Hello-World/issues"
+  method: "GET"
+  headers:
+    User-Agent: "q2git/1.0"
+    Accept: "application/json"
+
+# JQ query to transform the fetched data
+query: |
+  .[] | {number: .number, title: .title, state: .state}
+
+# Git repository configuration
+git:
+  api_url: "https://api.github.com"
+  owner: "mihaigalos"
+  repo: "test"
+  branch: "main"
+  output_path: "data_wasmcloud.json"
+  commit_message: "Update query results from {{.Timestamp}}"
