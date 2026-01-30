@@ -15,6 +15,11 @@ just build
 just deploy
 ```
 ## Testing
+```bash
+just test
+```
+
+Or manually POST to these endpoints:
 
 ```bash
 curl -X POST http://localhost:8000/api/execute # Execute query without committing

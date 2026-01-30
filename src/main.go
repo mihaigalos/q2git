@@ -1,20 +1,18 @@
-//go:generate go run go.bytecodealliance.org/cmd/wit-bindgen-go generate --world hello --out gen ./wit
+//go:generate go run go.bytecodealliance.org/cmd/wit-bindgen-go generate --world hello --out ../gen ../wit
 package main
 
 import (
 	"net/http"
-
-	"q2git/src"
 
 	"go.wasmcloud.dev/component/net/wasihttp"
 )
 
 // Router maps paths to their handler functions
 var router = map[string]http.HandlerFunc{
-	"/":            src.HandleRoot,
-	"/health":      src.HandleHealth,
-	"/api/status":  src.HandleStatus,
-	"/api/execute": src.HandleExecuteQuery,
+	"/":            HandleRoot,
+	"/health":      HandleHealth,
+	"/api/status":  HandleStatus,
+	"/api/execute": HandleExecuteQuery,
 }
 
 func init() {
@@ -31,7 +29,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If no route matches, return 404
-	src.HandleNotFound(w, r)
+	HandleNotFound(w, r)
 }
 
 // Since we don't run this program like a CLI, the `main` function is empty. Instead,
