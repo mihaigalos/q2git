@@ -33,12 +33,12 @@ list:
     wash app list
 
 # Test the deployed application
-test:
-    @echo "\nTesting root endpoint..." && curl http://localhost:8000
-    @echo "\nTesting health endpoint..." && curl http://localhost:8000/health
-    @echo "\nTesting status endpoint..." && curl http://localhost:8000/api/status
-    @echo "\nTesting execute endpoint (dry-run)..." && curl -X POST http://localhost:8000/api/execute
-    @echo "\n"
+@test:
+    echo "\n📊 Testing query execution (without commit)..."
+    curl -s -X POST http://localhost:8000/api/execute | jq '{timestamp, result_count: (.results | length)}'
+    echo "\n🚀 Testing query execution with git commit..."
+    curl -s -X POST "http://localhost:8000/api/execute?commit=true" | jq '.'
+    echo "\n✅ Test complete\n"
 
 # Get detailed app status
 status:
@@ -51,11 +51,6 @@ logs:
 # Follow wasmCloud host logs
 logs-follow:
     tail -f ~/.local/share/wash/downloads/wasmcloud.log
-
-# Clean build artifacts
-clean:
-    cargo clean
-    rm -rf build/
 
 # Full development cycle: build, deploy, and test
 dev: up deploy

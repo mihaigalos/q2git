@@ -13,14 +13,12 @@ var embeddedConfig string
 //go:embed secrets.yaml
 var embeddedSecrets string
 
-// Config represents the q2git configuration
 type Config struct {
 	Source SourceConfig `yaml:"source"`
 	Query  string       `yaml:"query"`
 	Git    GitConfig    `yaml:"git"`
 }
 
-// SourceConfig represents the data source configuration
 type SourceConfig struct {
 	URL     string            `yaml:"url"`
 	Method  string            `yaml:"method"`
@@ -28,13 +26,11 @@ type SourceConfig struct {
 	Auth    AuthConfig        `yaml:"auth"`
 }
 
-// AuthConfig represents authentication configuration
 type AuthConfig struct {
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
 }
 
-// GitConfig represents git repository configuration
 type GitConfig struct {
 	APIURL        string `yaml:"api_url"`
 	Owner         string `yaml:"owner"`
@@ -45,7 +41,6 @@ type GitConfig struct {
 	Token         string `yaml:"token"`
 }
 
-// Secrets represents the secrets.yaml structure
 type Secrets struct {
 	Source struct {
 		Username string `yaml:"username"`
@@ -56,21 +51,17 @@ type Secrets struct {
 	} `yaml:"git"`
 }
 
-// LoadConfig loads configuration from embedded config.yaml and secrets.yaml
 func LoadConfig() (*Config, error) {
-	// Load main configuration
 	var config Config
 	if err := yaml.Unmarshal([]byte(embeddedConfig), &config); err != nil {
 		return nil, fmt.Errorf("failed to parse embedded config: %w", err)
 	}
 
-	// Load and merge secrets
 	var secrets Secrets
 	if err := yaml.Unmarshal([]byte(embeddedSecrets), &secrets); err != nil {
 		return nil, fmt.Errorf("failed to parse embedded secrets: %w", err)
 	}
 
-	// Merge secrets into config
 	if secrets.Source.Username != "" {
 		config.Source.Auth.Username = secrets.Source.Username
 	}
