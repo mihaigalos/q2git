@@ -13,14 +13,41 @@ import (
 	"go.wasmcloud.dev/component/net/wasihttp"
 )
 
-// CommitToGit commits the results to a git repository using GitHub API
 func CommitToGit(cfg *DestinationConfig, content []byte) error {
 	if cfg.Token == "" {
 		return fmt.Errorf("git token not configured")
 	}
 
-	// Step 1: Get the current commit SHA of the branch
-	refsURL := fmt.Sprintf("%s/repos/%s/%s/git/refs/heads/%s",
+	baseSHA, err := getBranchRef(cfg)
+	if err != nil {
+		return err
+	}
+
+	treeSHA, err := getCommitTree(cfg, baseSHA)
+	if err != nil {
+		return err
+	}
+
+	blobSHA, err := createBlob(cfg, content)
+	if err != nil {
+		return err
+	}
+
+	newTreeSHA, err := createTree(cfg, treeSHA, blobSHA)
+	if err != nil {
+		return err
+	}
+
+	commitSHA, err := createCommit(cfg, newTreeSHA, baseSHA)
+	if err != nil {
+		return err
+	}
+
+	return updateBranchRef(cfg, commitSHA)
+}
+
+func getBranchRef(cfg *DestinationConfig) (string, error) {
+	url := fmt.Sprintf("%s/repos/%s/%s/git/refs/heads/%s",
 		cfg.APIURL, cfg.Owner, cfg.Repo, cfg.Branch)
 
 	var refData struct {
@@ -29,15 +56,16 @@ func CommitToGit(cfg *DestinationConfig, content []byte) error {
 		} `json:"object"`
 	}
 
-	if err := githubAPIRequest("GET", refsURL, cfg.Token, nil, &refData); err != nil {
-		return fmt.Errorf("failed to get branch ref: %w", err)
+	if err := githubAPIRequest("GET", url, cfg.Token, nil, &refData); err != nil {
+		return "", fmt.Errorf("failed to get branch ref: %w", err)
 	}
 
-	baseSHA := refData.Object.SHA
+	return refData.Object.SHA, nil
+}
 
-	// Step 2: Get the tree of the current commit
-	commitURL := fmt.Sprintf("%s/repos/%s/%s/git/commits/%s",
-		cfg.APIURL, cfg.Owner, cfg.Repo, baseSHA)
+func getCommitTree(cfg *DestinationConfig, commitSHA string) (string, error) {
+	url := fmt.Sprintf("%s/repos/%s/%s/git/commits/%s",
+		cfg.APIURL, cfg.Owner, cfg.Repo, commitSHA)
 
 	var commitData struct {
 		Tree struct {
@@ -45,15 +73,18 @@ func CommitToGit(cfg *DestinationConfig, content []byte) error {
 		} `json:"tree"`
 	}
 
-	if err := githubAPIRequest("GET", commitURL, cfg.Token, nil, &commitData); err != nil {
-		return fmt.Errorf("failed to get commit tree: %w", err)
+	if err := githubAPIRequest("GET", url, cfg.Token, nil, &commitData); err != nil {
+		return "", fmt.Errorf("failed to get commit tree: %w", err)
 	}
 
-	// Step 3: Create a new blob with the file content
-	blobURL := fmt.Sprintf("%s/repos/%s/%s/git/blobs",
+	return commitData.Tree.SHA, nil
+}
+
+func createBlob(cfg *DestinationConfig, content []byte) (string, error) {
+	url := fmt.Sprintf("%s/repos/%s/%s/git/blobs",
 		cfg.APIURL, cfg.Owner, cfg.Repo)
 
-	blobPayload := map[string]string{
+	payload := map[string]string{
 		"content":  base64.StdEncoding.EncodeToString(content),
 		"encoding": "base64",
 	}
@@ -62,22 +93,25 @@ func CommitToGit(cfg *DestinationConfig, content []byte) error {
 		SHA string `json:"sha"`
 	}
 
-	if err := githubAPIRequest("POST", blobURL, cfg.Token, blobPayload, &blobData); err != nil {
-		return fmt.Errorf("failed to create blob: %w", err)
+	if err := githubAPIRequest("POST", url, cfg.Token, payload, &blobData); err != nil {
+		return "", fmt.Errorf("failed to create blob: %w", err)
 	}
 
-	// Step 4: Create a new tree with the updated file
-	treeURL := fmt.Sprintf("%s/repos/%s/%s/git/trees",
+	return blobData.SHA, nil
+}
+
+func createTree(cfg *DestinationConfig, baseTreeSHA, blobSHA string) (string, error) {
+	url := fmt.Sprintf("%s/repos/%s/%s/git/trees",
 		cfg.APIURL, cfg.Owner, cfg.Repo)
 
-	treePayload := map[string]interface{}{
-		"base_tree": commitData.Tree.SHA,
+	payload := map[string]interface{}{
+		"base_tree": baseTreeSHA,
 		"tree": []map[string]string{
 			{
 				"path": cfg.OutputPath,
 				"mode": "100644",
 				"type": "blob",
-				"sha":  blobData.SHA,
+				"sha":  blobSHA,
 			},
 		},
 	}
@@ -86,47 +120,52 @@ func CommitToGit(cfg *DestinationConfig, content []byte) error {
 		SHA string `json:"sha"`
 	}
 
-	if err := githubAPIRequest("POST", treeURL, cfg.Token, treePayload, &treeData); err != nil {
-		return fmt.Errorf("failed to create tree: %w", err)
+	if err := githubAPIRequest("POST", url, cfg.Token, payload, &treeData); err != nil {
+		return "", fmt.Errorf("failed to create tree: %w", err)
 	}
 
-	// Step 5: Create a new commit
-	newCommitURL := fmt.Sprintf("%s/repos/%s/%s/git/commits",
+	return treeData.SHA, nil
+}
+
+func createCommit(cfg *DestinationConfig, treeSHA, parentSHA string) (string, error) {
+	url := fmt.Sprintf("%s/repos/%s/%s/git/commits",
 		cfg.APIURL, cfg.Owner, cfg.Repo)
 
-	commitMsg := strings.ReplaceAll(cfg.CommitMessage, "{{.Timestamp}}", time.Now().Format(time.RFC3339))
+	message := strings.ReplaceAll(cfg.CommitMessage, "{{.Timestamp}}", time.Now().Format(time.RFC3339))
 
-	commitPayload := map[string]interface{}{
-		"message": commitMsg,
-		"tree":    treeData.SHA,
-		"parents": []string{baseSHA},
+	payload := map[string]interface{}{
+		"message": message,
+		"tree":    treeSHA,
+		"parents": []string{parentSHA},
 	}
 
-	var newCommitData struct {
+	var commitData struct {
 		SHA string `json:"sha"`
 	}
 
-	if err := githubAPIRequest("POST", newCommitURL, cfg.Token, commitPayload, &newCommitData); err != nil {
-		return fmt.Errorf("failed to create commit: %w", err)
+	if err := githubAPIRequest("POST", url, cfg.Token, payload, &commitData); err != nil {
+		return "", fmt.Errorf("failed to create commit: %w", err)
 	}
 
-	// Step 6: Update the reference to point to the new commit
-	updateRefURL := fmt.Sprintf("%s/repos/%s/%s/git/refs/heads/%s",
+	return commitData.SHA, nil
+}
+
+func updateBranchRef(cfg *DestinationConfig, commitSHA string) error {
+	url := fmt.Sprintf("%s/repos/%s/%s/git/refs/heads/%s",
 		cfg.APIURL, cfg.Owner, cfg.Repo, cfg.Branch)
 
-	updatePayload := map[string]interface{}{
-		"sha":   newCommitData.SHA,
+	payload := map[string]interface{}{
+		"sha":   commitSHA,
 		"force": false,
 	}
 
-	if err := githubAPIRequest("PATCH", updateRefURL, cfg.Token, updatePayload, nil); err != nil {
+	if err := githubAPIRequest("PATCH", url, cfg.Token, payload, nil); err != nil {
 		return fmt.Errorf("failed to update branch ref: %w", err)
 	}
 
 	return nil
 }
 
-// githubAPIRequest makes an authenticated request to the GitHub API
 func githubAPIRequest(method, url, token string, payload, response interface{}) error {
 	var body io.Reader
 	if payload != nil {
@@ -149,7 +188,6 @@ func githubAPIRequest(method, url, token string, payload, response interface{}) 
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	// Use wasmCloud's HTTP client
 	client := &http.Client{
 		Transport: &wasihttp.Transport{
 			ConnectTimeout: 30 * time.Second,
