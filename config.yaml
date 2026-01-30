@@ -1,7 +1,5 @@
 # q2git Configuration
-# Non-sensitive configuration - safe to commit to git
 
-# Data source configuration
 source:
   url: "https://api.github.com/repos/octocat/Hello-World/issues"
   method: "GET"
@@ -9,12 +7,12 @@ source:
     User-Agent: "q2git/1.0"
     Accept: "application/json"
 
-# JQ query to transform the fetched data
+# JQ query to mutate the fetched data
 query: |
   .[] | {number: .number, title: .title, state: .state}
 
-# Git repository configuration
-git:
+# Destination repository configuration
+destination:
   api_url: "https://api.github.com"
   owner: "mihaigalos"
   repo: "test"

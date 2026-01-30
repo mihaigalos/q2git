@@ -14,7 +14,7 @@ import (
 )
 
 // CommitToGit commits the results to a git repository using GitHub API
-func CommitToGit(cfg *GitConfig, content []byte) error {
+func CommitToGit(cfg *DestinationConfig, content []byte) error {
 	if cfg.Token == "" {
 		return fmt.Errorf("git token not configured")
 	}
