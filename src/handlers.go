@@ -60,7 +60,7 @@ func HandleExecuteQuery(w http.ResponseWriter, r *http.Request) {
 
 	if shouldCommit {
 		// Commit results to git
-		if err := CommitToGit(&config.Git, results); err != nil {
+		if err := CommitToGit(&config.Destination, results); err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(map[string]string{
@@ -74,9 +74,9 @@ func HandleExecuteQuery(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"status":  "success",
 			"message": "Query executed and results committed to git",
-			"repo":    fmt.Sprintf("%s/%s", config.Git.Owner, config.Git.Repo),
-			"branch":  config.Git.Branch,
-			"path":    config.Git.OutputPath,
+			"repo":    fmt.Sprintf("%s/%s", config.Destination.Owner, config.Destination.Repo),
+			"branch":  config.Destination.Branch,
+			"path":    config.Destination.OutputPath,
 		})
 	} else {
 		// Return results without committing

@@ -14,9 +14,9 @@ var embeddedConfig string
 var embeddedSecrets string
 
 type Config struct {
-	Source SourceConfig `yaml:"source"`
-	Query  string       `yaml:"query"`
-	Git    GitConfig    `yaml:"git"`
+	Source      SourceConfig      `yaml:"source"`
+	Query       string            `yaml:"query"`
+	Destination DestinationConfig `yaml:"destination"`
 }
 
 type SourceConfig struct {
@@ -31,7 +31,7 @@ type AuthConfig struct {
 	Password string `yaml:"password"`
 }
 
-type GitConfig struct {
+type DestinationConfig struct {
 	APIURL        string `yaml:"api_url"`
 	Owner         string `yaml:"owner"`
 	Repo          string `yaml:"repo"`
@@ -46,9 +46,9 @@ type Secrets struct {
 		Username string `yaml:"username"`
 		Password string `yaml:"password"`
 	} `yaml:"source"`
-	Git struct {
+	Destination struct {
 		Token string `yaml:"token"`
-	} `yaml:"git"`
+	} `yaml:"destination"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -68,8 +68,8 @@ func LoadConfig() (*Config, error) {
 	if secrets.Source.Password != "" {
 		config.Source.Auth.Password = secrets.Source.Password
 	}
-	if secrets.Git.Token != "" {
-		config.Git.Token = secrets.Git.Token
+	if secrets.Destination.Token != "" {
+		config.Destination.Token = secrets.Destination.Token
 	}
 
 	return &config, nil
