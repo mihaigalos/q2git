@@ -32,21 +32,25 @@ curl -X POST "http://localhost:8000/api/execute?commit=true" # Execute and commi
 
 ```yaml
 source:
-  url: "https://api.github.com/repos/owner/repo/issues"
+  url: "https://api.github.com/repos/octocat/Hello-World/issues"
   method: "GET"
   headers:
     User-Agent: "q2git/1.0"
     Accept: "application/json"
 
+# JQ query to transform the fetched data
 query: |
-  .[] | {number: .number, title: .title, state: .state}
+  {
+    timestamp: (now | strftime("%Y-%m-%dT%H:%M:%SZ")),
+    results: [.[] | {number: .number, title: .title, state: .state}] | .[0:10]
+  }
 
-git:
+destination:
   api_url: "https://api.github.com"
-  owner: "your-username"
-  repo: "your-repo"
+  owner: "mihaigalos"
+  repo: "test"
   branch: "main"
-  output_path: "query-results/data.json"
+  output_path: "data_wasmcloud.json"
   commit_message: "Update query results from {{.Timestamp}}"
 ```
 
