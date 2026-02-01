@@ -8,6 +8,15 @@ import (
 	"strings"
 )
 
+// @Summary Execute query and optionally commit to git
+// @Description Fetches data from the configured source, executes a JQ query, and optionally commits results to a git repository
+// @Tags query
+// @Router /api/execute [post]
+// @Param commit query boolean false "Commit results to git repository"
+// @Success 200 {object} object "Query results or commit success message"
+// @Failure 400 {object} object "Bad request"
+// @Failure 500 {object} object "Internal server error"
+// @Produce json
 func HandleExecuteQuery(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeJSONError(w, http.StatusMethodNotAllowed, "Method not allowed. Use POST", "")
@@ -71,11 +80,23 @@ func writeCommitSuccess(w http.ResponseWriter, config *Config) {
 	})
 }
 
+// @Summary Root endpoint
+// @Description Returns a welcome message
+// @Tags general
+// @Router / [get]
+// @Success 200 {string} string "Welcome message"
+// @Produce plain
 func HandleRoot(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	_, _ = fmt.Fprintf(w, "Hello from TinyGo WebAssembly on wasmCloud! 🚀\n")
 }
 
+// @Summary Health check
+// @Description Returns the health status of the service
+// @Tags monitoring
+// @Router /health [get]
+// @Success 200 {object} object "Health status"
+// @Produce json
 func HandleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	response := map[string]interface{}{
@@ -86,6 +107,12 @@ func HandleHealth(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// @Summary Service status
+// @Description Returns detailed service status including version and available endpoints
+// @Tags monitoring
+// @Router /api/status [get]
+// @Success 200 {object} object "Service status"
+// @Produce json
 func HandleStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	response := map[string]interface{}{
@@ -103,6 +130,11 @@ func HandleStatus(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// @Summary 404 handler
+// @Description Returns a 404 error for unmatched routes
+// @Tags general
+// @Success 404 {object} object "Not found error"
+// @Produce json
 func HandleNotFound(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusNotFound)
