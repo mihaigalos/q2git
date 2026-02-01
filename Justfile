@@ -52,6 +52,13 @@ logs:
 logs-follow:
     tail -f ~/.local/share/wash/downloads/wasmcloud.log
 
+# Generate OpenAPI specification
+generate-openapi:
+    #!/bin/bash
+    cd scripts && . .venv/bin/activate
+    pip install -r requirements.txt
+    python3 generate_openapi.py
+
 # Full development cycle: build, deploy, and test
 dev: up deploy
     @echo "✅ Application deployed! Testing..."

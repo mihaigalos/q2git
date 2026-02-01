@@ -1,0 +1,91 @@
+openapi: 3.0.3
+info:
+  title: q2git API
+  description: Query execution and Git commit service for wasmCloud
+  version: 1.0.0
+  contact:
+    name: q2git
+servers:
+- url: http://localhost:8000
+  description: Local development server
+tags:
+- name: query
+  description: Query execution and commit operations
+- name: health
+  description: Health and status endpoints
+- name: info
+  description: Service information
+paths:
+  /api/execute:
+    post:
+      summary: Execute query and optionally commit to git
+      description: Fetches data from the configured source, executes a JQ query, and
+        optionally commits results to a git repository
+      tags:
+      - query
+      responses:
+        '200':
+          description: Query results or commit success message
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+      parameters:
+      - name: commit
+        in: query
+        required: false
+        description: Commit results to git repository
+        schema:
+          type: boolean
+  /:
+    get:
+      summary: Root endpoint
+      description: Returns a welcome message
+      tags:
+      - general
+      responses:
+        '200':
+          description: Welcome message
+          content:
+            application/json:
+              schema:
+                type: object
+  /health:
+    get:
+      summary: Health check
+      description: Returns the health status of the service
+      tags:
+      - monitoring
+      responses:
+        '200':
+          description: Health status
+          content:
+            application/json:
+              schema:
+                type: object
+  /api/status:
+    get:
+      summary: Service status
+      description: Returns detailed service status including version and available
+        endpoints
+      tags:
+      - monitoring
+      responses:
+        '200':
+          description: Service status
+          content:
+            application/json:
+              schema:
+                type: object
