@@ -14,7 +14,9 @@ Two configuration files that are embedded into the WASM binary at build time: **
 just build
 just deploy
 ```
+
 ## Testing
+
 ```bash
 just test
 ```
@@ -61,6 +63,6 @@ source:
   username: ""
   password: ""
 
-git:
+destination:
   token: "github_pat_xxxxxxxxxxxxxxxxxxxxxx_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 ```
