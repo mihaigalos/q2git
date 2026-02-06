@@ -64,3 +64,43 @@ dev: up deploy
     @echo "✅ Application deployed! Testing..."
     @sleep 3
     @just test
+
+# Setup wasm32-wasip2 target for TinyGo (one-time setup for macOS ARM64)
+_setup_wasm:
+    #!/bin/bash
+    set -e
+    TINYGO_VERSION=$(tinygo version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+    TARGET_FILE="/opt/homebrew/Cellar/tinygo/${TINYGO_VERSION}/targets/wasm32-wasip2.json"
+    if [ -f "$TARGET_FILE" ]; then echo "✅ wasm32-wasip2 target already exists"; exit 0; fi
+    echo "📝 Creating wasm32-wasip2 target file at $TARGET_FILE"
+    cat > "$TARGET_FILE" << 'EOF'
+    {
+        "llvm-target":   "wasm32-wasi",
+        "cpu":           "generic",
+        "features":      "+bulk-memory,+mutable-globals,+nontrapping-fptoint,+sign-ext,+reference-types",
+        "build-tags":    ["tinygo.wasm", "wasi"],
+        "goos":          "wasip1",
+        "goarch":        "wasm",
+        "linker":        "wasm-ld",
+        "libc":          "wasi-libc",
+        "rtlib":         "compiler-rt",
+        "gc":            "conservative",
+        "scheduler":     "asyncify",
+        "default-stack-size": 16384,
+        "cflags": [
+            "-mbulk-memory",
+            "-mnontrapping-fptoint",
+            "-msign-ext",
+            "-mreference-types"
+        ],
+        "ldflags": [
+            "--allow-undefined",
+            "--stack-first",
+            "--no-demangle"
+        ],
+        "extra-files": [
+            "src/runtime/asm_tinygowasm.S"
+        ]
+    }
+    EOF
+    echo "✅ wasm32-wasip2 target created successfully"
