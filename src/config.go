@@ -17,15 +17,21 @@ type SettingsConfig struct {
 	WriteMode string `yaml:"write_mode"` // "overwrite" or "append"
 }
 
+type QueryConfig struct {
+	Name        string `yaml:"name"`
+	Description string `yaml:"description"`
+	URL         string `yaml:"url"`
+	Query       string `yaml:"query"`
+}
+
 type Config struct {
 	Settings    SettingsConfig    `yaml:"settings"`
 	Source      SourceConfig      `yaml:"source"`
-	Query       string            `yaml:"query"`
+	Queries     []QueryConfig     `yaml:"queries"`
 	Destination DestinationConfig `yaml:"destination"`
 }
 
 type SourceConfig struct {
-	URL     string            `yaml:"url"`
 	Method  string            `yaml:"method"`
 	Headers map[string]string `yaml:"headers"`
 	Auth    AuthConfig        `yaml:"auth"`

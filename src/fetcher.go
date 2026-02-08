@@ -9,8 +9,8 @@ import (
 	"go.wasmcloud.dev/component/net/wasihttp"
 )
 
-func FetchData(cfg *SourceConfig) ([]byte, error) {
-	req, err := http.NewRequest(cfg.Method, cfg.URL, nil)
+func FetchData(cfg *SourceConfig, url string) ([]byte, error) {
+	req, err := http.NewRequest(cfg.Method, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}

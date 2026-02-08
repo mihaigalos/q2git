@@ -29,33 +29,72 @@ func HandleExecuteQuery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := FetchData(&config.Source)
-	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "Failed to fetch data", err.Error())
-		return
-	}
-
-	results, err := ExecuteQuery(config.Query, data)
-	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "Query execution failed", err.Error())
+	if len(config.Queries) == 0 {
+		writeJSONError(w, http.StatusInternalServerError, "No queries configured", "")
 		return
 	}
 
 	shouldCommit := r.URL.Query().Get("commit") == "true"
+	queryName := r.URL.Query().Get("query")
+
+	type queryResult struct {
+		Name        string          `json:"name"`
+		Description string          `json:"description,omitempty"`
+		Result      json.RawMessage `json:"result"`
+	}
+
+	var allResults []queryResult
+	var combined []byte
+
+	for _, q := range config.Queries {
+		if queryName != "" && q.Name != queryName {
+			continue
+		}
+
+		data, err := FetchData(&config.Source, q.URL)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, fmt.Sprintf("Query '%s': failed to fetch data", q.Name), err.Error())
+			return
+		}
+
+		result, err := ExecuteQuery(q.Query, data)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, fmt.Sprintf("Query '%s' failed", q.Name), err.Error())
+			return
+		}
+
+		if shouldCommit {
+			var unquoted string
+			if err := json.Unmarshal(result, &unquoted); err == nil {
+				result = []byte(unquoted)
+			}
+			combined = append(combined, result...)
+		} else {
+			allResults = append(allResults, queryResult{
+				Name:        q.Name,
+				Description: q.Description,
+				Result:      json.RawMessage(result),
+			})
+		}
+	}
 
 	if shouldCommit {
-		// If the JQ result is a JSON string, unquote it so actual newlines etc. are preserved in the committed file
-		var unquoted string
-		if err := json.Unmarshal(results, &unquoted); err == nil {
-			results = []byte(unquoted)
+		if len(combined) == 0 {
+			writeJSONError(w, http.StatusBadRequest, "No matching queries found", queryName)
+			return
 		}
-		if err := CommitToGit(&config.Destination, &config.Settings, results); err != nil {
+		if err := CommitToGit(&config.Destination, &config.Settings, combined); err != nil {
 			writeJSONError(w, http.StatusInternalServerError, "Failed to commit to git", err.Error())
 			return
 		}
 		writeCommitSuccess(w, config)
 	} else {
-		writeJSONRaw(w, results)
+		if len(allResults) == 1 {
+			writeJSONRaw(w, allResults[0].Result)
+		} else {
+			out, _ := json.MarshalIndent(allResults, "", "  ")
+			writeJSONRaw(w, out)
+		}
 	}
 }
 

@@ -7,23 +7,46 @@
 settings:
   write_mode: "append" # "overwrite" or "append"
 
-# Query 1: power-consumption (SCALAR query)
-# Calculates daily power consumption difference
 source:
-  url: "https://cloud.galos.one/prometheus/api/v1/query?query=scalar(max(max_over_time(smartmeter%7Bkind%3D%22total_power%22%7D%5B1d%5D))-max(max_over_time(smartmeter%7Bkind%3D%22total_power%22%7D%5B1d%5D%20offset%201d)))"
   method: "GET"
   headers:
     User-Agent: "q2git/1.0"
     Accept: "application/json"
 
-# JQ query to transform the Prometheus scalar response
-# Scalar queries return: {status: "success", data: {resultType: "scalar", result: [timestamp, value]}}
-query: |
-  if .status == "success" and .data.resultType == "scalar" and (.data.result | length) == 2 then
-    "\n" + (.data.result[0] | tonumber | strftime("%Y-%m-%d %H:%M:%S")) + ", " + (if .data.result[1] == "NaN" then "No Data" else (.data.result[1] | tostring) end)
-  else
-    error("Invalid response format")
-  end
+queries:
+  - name: "power-consumption"
+    description: "Daily power consumption difference (scalar query)"
+    url: "https://cloud.galos.one/prometheus/api/v1/query?query=scalar(max(max_over_time(smartmeter%7Bkind%3D%22total_power%22%7D%5B1d%5D))-max(max_over_time(smartmeter%7Bkind%3D%22total_power%22%7D%5B1d%5D%20offset%201d)))"
+    query: |
+      if .status == "success" and .data.resultType == "scalar" and (.data.result | length) == 2 then
+        "\n" + (.data.result[0] | tonumber | strftime("%Y-%m-%d %H:%M:%S")) + ", " + (if .data.result[1] == "NaN" then "No Data" else (.data.result[1] | tostring) end)
+      else
+        error("Invalid response format")
+      end
+
+  - name: "injected-power"
+    description: "Daily injected power in kWh (scalar/vector query)"
+    url: "https://cloud.galos.one/prometheus/api/v1/query?query=scalar((max(max_over_time(smartmeter%7Bkind%3D%22total_powerN%22%7D%5B1d%5D))%20-%20min(min_over_time(smartmeter%7Bkind%3D%22total_powerN%22%7D%5B1d%5D)))%20/%201000)"
+    query: |
+      if .status == "success" and ((.data.resultType == "scalar" and (.data.result | length) == 2) or (.data.resultType == "vector" and (.data.result | length) > 0)) then
+        if .data.resultType == "scalar" then
+          ", " + (if .data.result[1] == "NaN" then "0.0" else (.data.result[1] | tostring) end)
+        else
+          ", " + (if .data.result[0].value[1] == "NaN" then "0.0" else (.data.result[0].value[1] | tostring) end)
+        end
+      else
+        error("Invalid response format")
+      end
+
+  - name: "current-power"
+    description: "Current total power reading (vector query)"
+    url: "https://cloud.galos.one/prometheus/api/v1/query?query=smartmeter%7Bkind%3D%22total_power%22%7D"
+    query: |
+      if .status == "success" and .data.resultType == "vector" and (.data.result | length) > 0 then
+        ", " + (if .data.result[0].value[1] == "NaN" then "No Data" else (.data.result[0].value[1] | tostring) end)
+      else
+        error("Invalid response format")
+      end
 
 destination:
   api_url: "https://api.github.com"
@@ -32,25 +55,3 @@ destination:
   branch: "main"
   output_path: "data_powerreadings.csv"
   commit_message: "Smart meter power consumption analysis from Prometheus"
-
-# Query 2: injected-power (SCALAR/VECTOR query)
-# URL: https://cloud.galos.one/prometheus/api/v1/query?query=scalar((max(max_over_time(smartmeter%7Bkind%3D%22total_powerN%22%7D%5B1d%5D))%20-%20min(min_over_time(smartmeter%7Bkind%3D%22total_powerN%22%7D%5B1d%5D)))%20/%201000)
-# Handles both scalar and vector resultTypes
-# JQ: if .status == "success" and ((.data.resultType == "scalar" and (.data.result | length) == 2) or (.data.resultType == "vector" and (.data.result | length) > 0)) then
-#       if .data.resultType == "scalar" then
-#         (if .data.result[1] == "NaN" then "0.0" else (.data.result[1] | tostring) end)
-#       else
-#         (if .data.result[0].value[1] == "NaN" then "0.0" else (.data.result[0].value[1] | tostring) end)
-#       end
-#     else
-#       error("Invalid response format")
-#     end
-
-# Query 3: current-power (VECTOR query)
-# URL: https://cloud.galos.one/prometheus/api/v1/query?query=smartmeter%7Bkind%3D%22total_power%22%7D
-# Vector queries return: {status: "success", data: {resultType: "vector", result: [{metric: {}, value: [timestamp, value]}]}}
-# JQ: if .status == "success" and .data.resultType == "vector" and (.data.result | length) > 0 then
-#       (if .data.result[0].value[1] == "NaN" then "No Data" else (.data.result[0].value[1] | tostring) end)
-#     else
-#       error("Invalid response format")
-#     end
