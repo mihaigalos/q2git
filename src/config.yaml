@@ -4,6 +4,9 @@
 # Schedule: Daily at midnight (0 0 * * *)
 # Auth: Requires github-data-smartmeter secret with token key
 
+settings:
+  write_mode: "append" # "overwrite" or "append"
+
 # Query 1: power-consumption (SCALAR query)
 # Calculates daily power consumption difference
 source:

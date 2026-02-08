@@ -13,7 +13,12 @@ var embeddedConfig string
 //go:embed secrets.yaml
 var embeddedSecrets string
 
+type SettingsConfig struct {
+	WriteMode string `yaml:"write_mode"` // "overwrite" or "append"
+}
+
 type Config struct {
+	Settings    SettingsConfig    `yaml:"settings"`
 	Source      SourceConfig      `yaml:"source"`
 	Query       string            `yaml:"query"`
 	Destination DestinationConfig `yaml:"destination"`

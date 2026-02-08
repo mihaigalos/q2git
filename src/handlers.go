@@ -44,7 +44,12 @@ func HandleExecuteQuery(w http.ResponseWriter, r *http.Request) {
 	shouldCommit := r.URL.Query().Get("commit") == "true"
 
 	if shouldCommit {
-		if err := CommitToGit(&config.Destination, results); err != nil {
+		// If the JQ result is a JSON string, unquote it so actual newlines etc. are preserved in the committed file
+		var unquoted string
+		if err := json.Unmarshal(results, &unquoted); err == nil {
+			results = []byte(unquoted)
+		}
+		if err := CommitToGit(&config.Destination, &config.Settings, results); err != nil {
 			writeJSONError(w, http.StatusInternalServerError, "Failed to commit to git", err.Error())
 			return
 		}

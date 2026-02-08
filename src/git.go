@@ -13,7 +13,7 @@ import (
 	"go.wasmcloud.dev/component/net/wasihttp"
 )
 
-func CommitToGit(cfg *DestinationConfig, content []byte) error {
+func CommitToGit(cfg *DestinationConfig, settings *SettingsConfig, content []byte) error {
 	if cfg.Token == "" {
 		return fmt.Errorf("git token not configured")
 	}
@@ -26,6 +26,14 @@ func CommitToGit(cfg *DestinationConfig, content []byte) error {
 	treeSHA, err := getCommitTree(cfg, baseSHA)
 	if err != nil {
 		return err
+	}
+
+	if settings.WriteMode == "append" {
+		existing, err := getFileContent(cfg)
+		if err == nil {
+			content = append(existing, content...)
+		}
+		// If file doesn't exist yet, just use content as-is
 	}
 
 	blobSHA, err := createBlob(cfg, content)
@@ -44,6 +52,33 @@ func CommitToGit(cfg *DestinationConfig, content []byte) error {
 	}
 
 	return updateBranchRef(cfg, commitSHA)
+}
+
+func getFileContent(cfg *DestinationConfig) ([]byte, error) {
+	url := fmt.Sprintf("%s/repos/%s/%s/contents/%s?ref=%s",
+		cfg.APIURL, cfg.Owner, cfg.Repo, cfg.OutputPath, cfg.Branch)
+
+	var fileData struct {
+		Content  string `json:"content"`
+		Encoding string `json:"encoding"`
+	}
+
+	if err := githubAPIRequest("GET", url, cfg.Token, nil, &fileData); err != nil {
+		return nil, err
+	}
+
+	if fileData.Encoding != "base64" {
+		return nil, fmt.Errorf("unexpected encoding: %s", fileData.Encoding)
+	}
+
+	// GitHub returns base64 with newlines, strip them
+	clean := strings.ReplaceAll(fileData.Content, "\n", "")
+	decoded, err := base64.StdEncoding.DecodeString(clean)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode file content: %w", err)
+	}
+
+	return decoded, nil
 }
 
 func getBranchRef(cfg *DestinationConfig) (string, error) {
