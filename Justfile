@@ -34,11 +34,12 @@ list:
 
 # Test the deployed application
 @test: redeploy
-    sleep 5
-    echo "\n📊 Testing query execution (without commit)..."
-    curl -s -X POST http://localhost:8000/api/execute | jq '{timestamp, result_count: (.results | length)}'
+    echo "\n⏳ Waiting for component to start..."
+    for i in 5 4 3 2 1; do printf "\r  ⏳ ${i}s remaining..."; sleep 1; done; printf "\r                      \r"
+    echo "📊 Testing query execution (without commit)..."
+    curl -s -X POST http://localhost:8000/api/execute
     echo "\n🚀 Testing query execution with git commit..."
-    curl -s -X POST "http://localhost:8000/api/execute?commit=true" | jq '.'
+    curl -s -X POST "http://localhost:8000/api/execute?commit=true"
     echo "\n✅ Test complete\n"
 
 # Get detailed app status
