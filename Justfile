@@ -33,7 +33,7 @@ list:
     wash app list
 
 # Test the deployed application
-@test:
+@test: redeploy
     echo "\n📊 Testing query execution (without commit)..."
     curl -s -X POST http://localhost:8000/api/execute | jq '{timestamp, result_count: (.results | length)}'
     echo "\n🚀 Testing query execution with git commit..."
