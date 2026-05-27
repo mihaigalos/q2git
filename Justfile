@@ -54,12 +54,17 @@ logs:
 logs-follow:
     tail -f ~/.local/share/wash/downloads/wasmcloud.log
 
-# Generate OpenAPI specification
-generate-openapi:
+# Generate OpenAPI spec and serve it via Swagger UI
+openapi:
     #!/bin/bash
-    cd scripts && . .venv/bin/activate
-    pip install -r requirements.txt
-    python3 generate_openapi.py
+    set -euo pipefail
+    ROOT="$(pwd)"
+    (cd scripts && . .venv/bin/activate && pip install -q -r requirements.txt && python3 generate_openapi.py)
+    printf "🌐 Swagger UI → http://localhost:8081  (Ctrl+C to stop)\n"
+    docker run --rm -p 8081:8080 \
+        -e SWAGGER_JSON=/openapi.yaml \
+        -v "$ROOT/openapi.yaml:/openapi.yaml:ro" \
+        swaggerapi/swagger-ui
 
 # Full development cycle: build, deploy, and test
 dev: up deploy

@@ -18,14 +18,40 @@ tags:
 paths:
   /api/execute:
     post:
-      summary: Execute query and optionally commit to git
-      description: Fetches data from the configured source, executes a JQ query, and
-        optionally commits results to a git repository
+      summary: Execute queries
+      description: Fetches data from the configured source and executes JQ queries
       tags:
       - query
       responses:
         '200':
-          description: Query results or commit success message
+          description: Query results
+          content:
+            application/json:
+              schema:
+                type: object
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+      parameters:
+      - name: query
+        in: query
+        required: false
+        description: Filter by query name
+        schema:
+          type: string
+  /api/commit:
+    post:
+      summary: Commit query results to git
+      description: Fetches data, executes JQ queries, and commits results to the configured
+        git repository
+      tags:
+      - query
+      responses:
+        '200':
+          description: Commit success message
           content:
             application/json:
               schema:
@@ -43,12 +69,12 @@ paths:
               schema:
                 type: object
       parameters:
-      - name: commit
+      - name: query
         in: query
         required: false
-        description: Commit results to git repository
+        description: Filter by query name
         schema:
-          type: boolean
+          type: string
   /:
     get:
       summary: Root endpoint
