@@ -5,9 +5,6 @@
 package main
 
 import (
-	"runtime"
-	"unsafe"
-
 	go_bytecodealliance_org__cm "go.bytecodealliance.org/cm"
 	go_wasmcloud_dev__component__gen__wasi__clocks__monotonic___clock "go.wasmcloud.dev/component/gen/wasi/clocks/monotonic-clock"
 	go_wasmcloud_dev__component__gen__wasi__http__outgoing___handler "go.wasmcloud.dev/component/gen/wasi/http/outgoing-handler"
@@ -15,6 +12,8 @@ import (
 	go_wasmcloud_dev__component__gen__wasi__io__poll "go.wasmcloud.dev/component/gen/wasi/io/poll"
 	go_wasmcloud_dev__component__gen__wasi__io__streams "go.wasmcloud.dev/component/gen/wasi/io/streams"
 	wadge "go.wasmcloud.dev/wadge"
+	"runtime"
+	"unsafe"
 )
 
 const _ string = runtime.Compiler
