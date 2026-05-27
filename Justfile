@@ -33,14 +33,14 @@ list:
     wash app list
 
 # Test the deployed application
-@test: redeploy
-    echo "\n⏳ Waiting for component to start..."
-    for i in 5 4 3 2 1; do printf "\r  ⏳ ${i}s remaining..."; sleep 1; done; printf "\r                      \r"
-    echo "📊 Testing query execution (without commit)..."
-    curl -s -X POST http://localhost:8000/api/execute
-    echo "\n🚀 Testing query execution with git commit..."
+test: redeploy
+    #!/bin/bash
+    printf "\n⏳ Waiting for component to be ready (retrying until outgoing HTTP is live)...\n"
+    until result=$(curl -sf -X POST http://localhost:8000/api/execute 2>/dev/null); do printf "."; sleep 1; done
+    printf " ready!\n\n📊 Query execution (without commit)...\n%s\n" "$result"
+    printf "\n🚀 Testing query execution with git commit...\n"
     curl -s -X POST "http://localhost:8000/api/execute?commit=true"
-    echo "\n✅ Test complete\n"
+    printf "\n✅ Test complete\n\n"
 
 # Get detailed app status
 status:
