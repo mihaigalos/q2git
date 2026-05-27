@@ -13,7 +13,7 @@ dev: up deploy
     @just test
 
 # Test the deployed application
-test: redeploy
+test: deploy
     #!/bin/bash
     printf "\n⏳ Waiting for component to be ready (retrying until outgoing HTTP is live)...\n"
     until result=$(curl -sf -X POST http://localhost:8000/api/execute 2>/dev/null); do printf "."; sleep 1; done
@@ -51,10 +51,6 @@ deploy: build
 [group('app')]
 undeploy:
     wash app undeploy q2git
-
-# Redeploy (undeploy + deploy)
-[group('app')]
-redeploy: undeploy deploy
 
 # List deployed applications
 [group('app')]
