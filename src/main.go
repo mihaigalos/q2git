@@ -13,6 +13,7 @@ var router = map[string]http.HandlerFunc{
 	"/health":      HandleHealth,
 	"/api/status":  HandleStatus,
 	"/api/execute": HandleExecuteQuery,
+	"/api/commit":  HandleCommit,
 }
 
 func init() {

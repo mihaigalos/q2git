@@ -38,8 +38,8 @@ test: redeploy
     printf "\n⏳ Waiting for component to be ready (retrying until outgoing HTTP is live)...\n"
     until result=$(curl -sf -X POST http://localhost:8000/api/execute 2>/dev/null); do printf "."; sleep 1; done
     printf " ready!\n\n📊 Query execution (without commit)...\n%s\n" "$result"
-    printf "\n🚀 Testing query execution with git commit...\n"
-    curl -s -X POST "http://localhost:8000/api/execute?commit=true"
+    printf "\n🚀 Testing commit...\n"
+    curl -s -X POST "http://localhost:8000/api/commit"
     printf "\n✅ Test complete\n\n"
 
 # Get detailed app status
