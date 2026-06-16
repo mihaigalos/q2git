@@ -3,6 +3,10 @@
 # Set PATH to use the native-tls version of wash
 export PATH := env_var('HOME') + "/.cargo/bin:" + env_var('PATH')
 
+registry := "docker.io/mihaigalos"
+tag      := `grep '^version' wasmcloud.toml | sed 's/version = "//;s/"//'`
+app      := "q2git"
+
 @_default:
     just --list
 
@@ -47,10 +51,22 @@ build:
 deploy: build
     wash app deploy wadm.yaml
 
+# Push the built component to an OCI registry
+[group('app')]
+push registry=registry tag=tag: build
+    #!/bin/bash
+    set -euo pipefail
+    helper=$(python3 -c "import json; d=json.load(open('$HOME/.docker/config.json')); print(d.get('credsStore',''))")
+    creds=$(echo "https://index.docker.io/v1/" | docker-credential-"$helper" get)
+    user=$(echo "$creds" | python3 -c "import json,sys; print(json.load(sys.stdin)['Username'])")
+    pass=$(echo "$creds" | python3 -c "import json,sys; print(json.load(sys.stdin)['Secret'])")
+    wash push --user "$user" --password "$pass" \
+        {{registry}}/{{app}}:{{tag}} build/{{app}}_s.wasm
+
 # Undeploy the application
 [group('app')]
 undeploy:
-    wash app undeploy q2git
+    wash app undeploy {{app}}
 
 # List deployed applications
 [group('app')]
@@ -83,4 +99,4 @@ openapi:
 # Get detailed app status
 [group('observe')]
 status:
-    wash app get q2git
+    wash app get {{app}}
