@@ -2,75 +2,74 @@
 
 `q2git` is a wasmCloud component that queries remote APIs, transforms results with JQ, and commits them to a git repository.
 
-## Configuration Files
+## Configuration
 
-Two configuration files are embedded into the WASM binary at build time: **config.yaml** and **secrets.yaml**.
+Configuration is provided at runtime through environment variables — nothing is
+embedded in the WASM binary.
 
-## Usage
+| Variable | Required | Purpose |
+|---|---|---|
+| `Q2GIT_CONFIG` | yes | Full config YAML (schema below) |
+| `Q2GIT_GITHUB_TOKEN` | yes | PAT with write access to the destination repo |
+| `Q2GIT_SOURCE_USERNAME` | no | Basic-auth username for the source API |
+| `Q2GIT_SOURCE_PASSWORD` | no | Basic-auth password for the source API |
 
-```bash
-just build
-just deploy
-```
+On wasmCloud + Kubernetes, `configFrom` (ConfigMap) and `secretFrom` (Secret) on
+the component's `localResources.environment` inject these values as env vars.
 
-## Testing
+### Example `Q2GIT_CONFIG`
 
-```bash
-just test
-```
-
-Or manually POST to these endpoints:
-
-```bash
-curl -X POST http://localhost:8000/api/execute                          # Execute all queries
-curl -X POST "http://localhost:8000/api/execute?query=power-consumption" # Execute a specific query by name
-curl -X POST "http://localhost:8000/api/execute?commit=true"            # Execute all queries and commit to git
-curl -X POST "http://localhost:8000/api/execute?query=power-consumption&commit=true" # Execute one query and commit
-```
-
-## Example config
-
-### config.yaml
+See [`config.yaml.example`](config.yaml.example):
 
 ```yaml
 settings:
-  write_mode: "append" # "overwrite" or "append"
+  write_mode: append   # or "overwrite"
 
 source:
-  method: "GET"
+  method: GET
   headers:
     User-Agent: "q2git/1.0"
     Accept: "application/json"
 
 queries:
-  - name: "open-issues"
-    description: "Top 10 open issues"
-    url: "https://api.github.com/repos/octocat/Hello-World/issues"
+  - name: open-issues
+    description: Top 10 open issues
+    url: https://api.github.com/repos/octocat/Hello-World/issues
     query: |
-      [.[] | {number: .number, title: .title, state: .state}] | .[0:10]
-
-  - name: "repo-stars"
-    description: "Star count for a repository"
-    url: "https://api.github.com/repos/octocat/Hello-World"
-    query: |
-      {name: .full_name, stars: .stargazers_count}
+      [.[] | {number, title, state}] | .[0:10]
 
 destination:
-  api_url: "https://api.github.com"
-  owner: "mihaigalos"
-  repo: "test"
-  branch: "main"
-  output_path: "data.json"
-  commit_message: "Update query results"
+  api_url: https://api.github.com
+  owner: mihaigalos
+  repo: test
+  branch: main
+  output_path: data.json
+  commit_message: Update query results
 ```
 
-### secrets.yaml (do not commit)
+The `destination.token` field is not accepted from YAML — the token
+must come from `Q2GIT_GITHUB_TOKEN`.
 
-```yaml
-source:
-  username: ""
-  password: ""
+## Local development
 
-destination:
-  token: "github_pat_xxxxxxxxxxxxxxxxxxxxxx_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+```bash
+export Q2GIT_CONFIG="$(cat config.yaml)"
+export Q2GIT_GITHUB_TOKEN=github_pat_...
+just dev
+```
+
+## API
+
+```bash
+curl -X POST http://localhost:8000/api/execute
+curl -X POST "http://localhost:8000/api/execute?query=power-consumption"
+curl -X POST "http://localhost:8000/api/commit"
+curl -X POST "http://localhost:8000/api/commit?query=power-consumption"
+```
+
+## Build and push
+
+```bash
+just build
+just push
 ```
