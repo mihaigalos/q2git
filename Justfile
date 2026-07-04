@@ -19,9 +19,19 @@ dev: up deploy
 # Test the deployed application
 test: deploy
     #!/bin/bash
-    printf "\n⏳ Waiting for component to be ready (retrying until outgoing HTTP is live)...\n"
-    until result=$(curl -sf -X POST http://localhost:8000/api/execute 2>/dev/null); do printf "."; sleep 1; done
-    printf " ready!\n\n📊 Query execution (without commit)...\n%s\n" "$result"
+    printf "\n⏳ Waiting for component to be ready (retrying on connection refused)...\n"
+    until http_code=$(curl -s -o /tmp/q2git_out -w "%{http_code}" -X POST http://localhost:8000/api/execute 2>/dev/null) && [ "$http_code" = "200" ]; do
+        # 000 = connection refused (port not open yet) → keep retrying
+        # anything else = server is up but returned an error → fail immediately
+        if [ -n "$http_code" ] && [ "$http_code" != "000" ]; then
+            printf "\n❌ HTTP %s — server is up but returned an error:\n" "$http_code"
+            cat /tmp/q2git_out
+            printf "\n"
+            exit 1
+        fi
+        printf "."; sleep 1
+    done
+    printf " ready!\n\n📊 Query execution (without commit)...\n%s\n" "$(cat /tmp/q2git_out)"
     printf "\n🚀 Testing commit...\n"
     curl -s -X POST "http://localhost:8000/api/commit"
     printf "\n✅ Test complete\n\n"
@@ -48,9 +58,45 @@ down:
 build:
     wash build
 
+# Push wasmCloud config (safe to commit — no secrets)
+[group('app')]
+config:
+    #!/bin/bash
+    config_value=$(cat <<'YAML'
+    settings:
+      write_mode: "append"
+
+    source:
+      method: "GET"
+      headers:
+        User-Agent: "q2git/1.0"
+        Accept: "application/json"
+
+    queries:
+      - name: "power-consumption"
+        description: "Daily power consumption difference (scalar query)"
+        url: "http://prometheus-server.prometheus.svc.cluster.local:82/prometheus/api/v1/query?query=round%28%28sum%28sum_over_time%28sunwoda_pv1_power_w%5B22h%5D%29%29%2Bsum%28sum_over_time%28sunwoda_pv2_power_w%5B22h%5D%29%29%29*30%2F3600000%2C0.01%29"
+        query: |
+          if .status == "success" and .data.resultType == "vector" and (.data.result | length) >= 1 then
+            "\n" + (.data.result[0].value[0] | tonumber | strftime("%Y-%m-%d %H:%M:%S")) + ", " + (if .data.result[0].value[1] == "NaN" then "No Data" else (.data.result[0].value[1] | tostring) end)
+          else
+            error("Invalid response format")
+          end
+
+    destination:
+      api_url: "https://api.github.com"
+      owner: "mihaigalos"
+      repo: "test"
+      branch: "main"
+      output_path: "data_powerreadings.csv"
+      commit_message: "Test from q2git"
+    YAML
+    )
+    wash config put q2git-config "Q2GIT_CONFIG=${config_value}"
+
 # Deploy the application
 [group('app')]
-deploy: build
+deploy: build config
     wash app deploy wadm.yaml
 
 # Push the built component to an OCI registry

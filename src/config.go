@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"os"
 
+	"go.wasmcloud.dev/component/wasmcloud"
 	"gopkg.in/yaml.v3"
 )
 
@@ -46,12 +46,12 @@ type Config struct {
 	Queries     []QueryConfig     `yaml:"queries"`
 }
 
-// LoadConfig reads Q2GIT_CONFIG (YAML), then overlays secrets from
-// Q2GIT_GITHUB_TOKEN, Q2GIT_SOURCE_USERNAME, and Q2GIT_SOURCE_PASSWORD.
+// LoadConfig reads Q2GIT_CONFIG (YAML) from wasmCloud named config, then overlays
+// secrets from Q2GIT_GITHUB_TOKEN, Q2GIT_SOURCE_USERNAME, and Q2GIT_SOURCE_PASSWORD.
 func LoadConfig() (*Config, error) {
-	raw := os.Getenv("Q2GIT_CONFIG")
+	raw := wasmcloud.GetConfigOrDefault("Q2GIT_CONFIG", "")
 	if raw == "" {
-		return nil, fmt.Errorf("Q2GIT_CONFIG environment variable is not set")
+		return nil, fmt.Errorf("Q2GIT_CONFIG is not set in wasmCloud config")
 	}
 
 	var cfg Config
@@ -59,15 +59,15 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("failed to parse Q2GIT_CONFIG: %w", err)
 	}
 
-	if token := os.Getenv("Q2GIT_GITHUB_TOKEN"); token != "" {
+	if token := wasmcloud.GetConfigOrDefault("Q2GIT_GITHUB_TOKEN", ""); token != "" {
 		cfg.Destination.Token = token
 	}
 
-	if username := os.Getenv("Q2GIT_SOURCE_USERNAME"); username != "" {
+	if username := wasmcloud.GetConfigOrDefault("Q2GIT_SOURCE_USERNAME", ""); username != "" {
 		cfg.Source.Auth.Username = username
 	}
 
-	if password := os.Getenv("Q2GIT_SOURCE_PASSWORD"); password != "" {
+	if password := wasmcloud.GetConfigOrDefault("Q2GIT_SOURCE_PASSWORD", ""); password != "" {
 		cfg.Source.Auth.Password = password
 	}
 

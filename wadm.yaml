@@ -16,6 +16,8 @@ spec:
       type: component
       properties:
         image: "file://./build/q2git_s.wasm"
+        config:
+          - name: q2git-config
       traits:
         # Govern the spread/scheduling of the component
         - type: spreadscaler

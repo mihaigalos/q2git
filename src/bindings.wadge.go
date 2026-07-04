@@ -7,10 +7,13 @@ package main
 import (
 	go_bytecodealliance_org__cm "go.bytecodealliance.org/cm"
 	go_wasmcloud_dev__component__gen__wasi__clocks__monotonic___clock "go.wasmcloud.dev/component/gen/wasi/clocks/monotonic-clock"
+	go_wasmcloud_dev__component__gen__wasi__config__runtime "go.wasmcloud.dev/component/gen/wasi/config/runtime"
 	go_wasmcloud_dev__component__gen__wasi__http__outgoing___handler "go.wasmcloud.dev/component/gen/wasi/http/outgoing-handler"
 	go_wasmcloud_dev__component__gen__wasi__http__types "go.wasmcloud.dev/component/gen/wasi/http/types"
 	go_wasmcloud_dev__component__gen__wasi__io__poll "go.wasmcloud.dev/component/gen/wasi/io/poll"
 	go_wasmcloud_dev__component__gen__wasi__io__streams "go.wasmcloud.dev/component/gen/wasi/io/streams"
+	go_wasmcloud_dev__component__gen__wasmcloud__bus__lattice "go.wasmcloud.dev/component/gen/wasmcloud/bus/lattice"
+	go_wasmcloud_dev__component__gen__wasmcloud__secrets__store "go.wasmcloud.dev/component/gen/wasmcloud/secrets/store"
 	wadge "go.wasmcloud.dev/wadge"
 	"runtime"
 	"unsafe"
@@ -83,6 +86,46 @@ func wasmimport_SubscribeInstant(when0 uint64) (result0 uint32) {
 			return ptr
 		}(), func() unsafe.Pointer {
 			ptr := unsafe.Pointer(&result0)
+			__p.Pin(ptr)
+			return ptr
+		}())
+	}); __err != nil {
+		wadge.CurrentErrorHandler()(__err)
+	}
+	return
+}
+
+//go:linkname wasmimport_Get go.wasmcloud.dev/component/gen/wasi/config/runtime.wasmimport_Get
+func wasmimport_Get(key0 *uint8, key1 uint32, result *go_bytecodealliance_org__cm.Result[go_wasmcloud_dev__component__gen__wasi__config__runtime.OptionStringShape, go_bytecodealliance_org__cm.Option[string], go_wasmcloud_dev__component__gen__wasi__config__runtime.ConfigError]) {
+	var __p runtime.Pinner
+	defer __p.Unpin()
+	if __err := wadge.WithCurrentInstance(func(__instance *wadge.Instance) error {
+		return __instance.Call("wasi:config/runtime@0.2.0-draft", "get", func() unsafe.Pointer {
+			ptr := unsafe.Pointer(key0)
+			__p.Pin(ptr)
+			return ptr
+		}(), func() unsafe.Pointer {
+			ptr := unsafe.Pointer(&key1)
+			__p.Pin(ptr)
+			return ptr
+		}(), func() unsafe.Pointer {
+			ptr := unsafe.Pointer(result)
+			__p.Pin(ptr)
+			return ptr
+		}())
+	}); __err != nil {
+		wadge.CurrentErrorHandler()(__err)
+	}
+	return
+}
+
+//go:linkname wasmimport_GetAll go.wasmcloud.dev/component/gen/wasi/config/runtime.wasmimport_GetAll
+func wasmimport_GetAll(result *go_bytecodealliance_org__cm.Result[go_wasmcloud_dev__component__gen__wasi__config__runtime.ConfigErrorShape, go_bytecodealliance_org__cm.List[[2]string], go_wasmcloud_dev__component__gen__wasi__config__runtime.ConfigError]) {
+	var __p runtime.Pinner
+	defer __p.Unpin()
+	if __err := wadge.WithCurrentInstance(func(__instance *wadge.Instance) error {
+		return __instance.Call("wasi:config/runtime@0.2.0-draft", "get-all", func() unsafe.Pointer {
+			ptr := unsafe.Pointer(result)
 			__p.Pin(ptr)
 			return ptr
 		}())
@@ -1975,6 +2018,150 @@ func wasmimport_OutputStreamResourceDrop(self0 uint32) {
 	if __err := wadge.WithCurrentInstance(func(__instance *wadge.Instance) error {
 		return __instance.Call("wasi:io/streams@0.2.0", "[resource-drop]output-stream", func() unsafe.Pointer {
 			ptr := unsafe.Pointer(&self0)
+			__p.Pin(ptr)
+			return ptr
+		}())
+	}); __err != nil {
+		wadge.CurrentErrorHandler()(__err)
+	}
+	return
+}
+
+//go:linkname wasmimport_NewCallTargetInterface go.wasmcloud.dev/component/gen/wasmcloud/bus/lattice.wasmimport_NewCallTargetInterface
+func wasmimport_NewCallTargetInterface(namespace0 *uint8, namespace1 uint32, package0 *uint8, package1 uint32, interface0 *uint8, interface1 uint32) (result0 uint32) {
+	var __p runtime.Pinner
+	defer __p.Unpin()
+	if __err := wadge.WithCurrentInstance(func(__instance *wadge.Instance) error {
+		return __instance.Call("wasmcloud:bus/lattice@1.0.0", "[constructor]call-target-interface", func() unsafe.Pointer {
+			ptr := unsafe.Pointer(namespace0)
+			__p.Pin(ptr)
+			return ptr
+		}(), func() unsafe.Pointer {
+			ptr := unsafe.Pointer(&namespace1)
+			__p.Pin(ptr)
+			return ptr
+		}(), func() unsafe.Pointer {
+			ptr := unsafe.Pointer(package0)
+			__p.Pin(ptr)
+			return ptr
+		}(), func() unsafe.Pointer {
+			ptr := unsafe.Pointer(&package1)
+			__p.Pin(ptr)
+			return ptr
+		}(), func() unsafe.Pointer {
+			ptr := unsafe.Pointer(interface0)
+			__p.Pin(ptr)
+			return ptr
+		}(), func() unsafe.Pointer {
+			ptr := unsafe.Pointer(&interface1)
+			__p.Pin(ptr)
+			return ptr
+		}(), func() unsafe.Pointer {
+			ptr := unsafe.Pointer(&result0)
+			__p.Pin(ptr)
+			return ptr
+		}())
+	}); __err != nil {
+		wadge.CurrentErrorHandler()(__err)
+	}
+	return
+}
+
+//go:linkname wasmimport_CallTargetInterfaceResourceDrop go.wasmcloud.dev/component/gen/wasmcloud/bus/lattice.wasmimport_CallTargetInterfaceResourceDrop
+func wasmimport_CallTargetInterfaceResourceDrop(self0 uint32) {
+	var __p runtime.Pinner
+	defer __p.Unpin()
+	if __err := wadge.WithCurrentInstance(func(__instance *wadge.Instance) error {
+		return __instance.Call("wasmcloud:bus/lattice@1.0.0", "[resource-drop]call-target-interface", func() unsafe.Pointer {
+			ptr := unsafe.Pointer(&self0)
+			__p.Pin(ptr)
+			return ptr
+		}())
+	}); __err != nil {
+		wadge.CurrentErrorHandler()(__err)
+	}
+	return
+}
+
+//go:linkname wasmimport_SetLinkName go.wasmcloud.dev/component/gen/wasmcloud/bus/lattice.wasmimport_SetLinkName
+func wasmimport_SetLinkName(name0 *uint8, name1 uint32, interfaces0 *go_wasmcloud_dev__component__gen__wasmcloud__bus__lattice.CallTargetInterface, interfaces1 uint32) {
+	var __p runtime.Pinner
+	defer __p.Unpin()
+	if __err := wadge.WithCurrentInstance(func(__instance *wadge.Instance) error {
+		return __instance.Call("wasmcloud:bus/lattice@1.0.0", "set-link-name", func() unsafe.Pointer {
+			ptr := unsafe.Pointer(name0)
+			__p.Pin(ptr)
+			return ptr
+		}(), func() unsafe.Pointer {
+			ptr := unsafe.Pointer(&name1)
+			__p.Pin(ptr)
+			return ptr
+		}(), func() unsafe.Pointer {
+			ptr := unsafe.Pointer(interfaces0)
+			__p.Pin(ptr)
+			return ptr
+		}(), func() unsafe.Pointer {
+			ptr := unsafe.Pointer(&interfaces1)
+			__p.Pin(ptr)
+			return ptr
+		}())
+	}); __err != nil {
+		wadge.CurrentErrorHandler()(__err)
+	}
+	return
+}
+
+//go:linkname wasmimport_Reveal go.wasmcloud.dev/component/gen/wasmcloud/secrets/reveal.wasmimport_Reveal
+func wasmimport_Reveal(s0 uint32, result *go_wasmcloud_dev__component__gen__wasmcloud__secrets__store.SecretValue) {
+	var __p runtime.Pinner
+	defer __p.Unpin()
+	if __err := wadge.WithCurrentInstance(func(__instance *wadge.Instance) error {
+		return __instance.Call("wasmcloud:secrets/reveal@0.1.0-draft", "reveal", func() unsafe.Pointer {
+			ptr := unsafe.Pointer(&s0)
+			__p.Pin(ptr)
+			return ptr
+		}(), func() unsafe.Pointer {
+			ptr := unsafe.Pointer(result)
+			__p.Pin(ptr)
+			return ptr
+		}())
+	}); __err != nil {
+		wadge.CurrentErrorHandler()(__err)
+	}
+	return
+}
+
+//go:linkname wasmimport_SecretResourceDrop go.wasmcloud.dev/component/gen/wasmcloud/secrets/store.wasmimport_SecretResourceDrop
+func wasmimport_SecretResourceDrop(self0 uint32) {
+	var __p runtime.Pinner
+	defer __p.Unpin()
+	if __err := wadge.WithCurrentInstance(func(__instance *wadge.Instance) error {
+		return __instance.Call("wasmcloud:secrets/store@0.1.0-draft", "[resource-drop]secret", func() unsafe.Pointer {
+			ptr := unsafe.Pointer(&self0)
+			__p.Pin(ptr)
+			return ptr
+		}())
+	}); __err != nil {
+		wadge.CurrentErrorHandler()(__err)
+	}
+	return
+}
+
+//go:linkname wasmimport_Get go.wasmcloud.dev/component/gen/wasmcloud/secrets/store.wasmimport_Get
+func wasmimport_Get(key0 *uint8, key1 uint32, result *go_bytecodealliance_org__cm.Result[go_wasmcloud_dev__component__gen__wasmcloud__secrets__store.SecretsErrorShape, go_wasmcloud_dev__component__gen__wasmcloud__secrets__store.Secret, go_wasmcloud_dev__component__gen__wasmcloud__secrets__store.SecretsError]) {
+	var __p runtime.Pinner
+	defer __p.Unpin()
+	if __err := wadge.WithCurrentInstance(func(__instance *wadge.Instance) error {
+		return __instance.Call("wasmcloud:secrets/store@0.1.0-draft", "get", func() unsafe.Pointer {
+			ptr := unsafe.Pointer(key0)
+			__p.Pin(ptr)
+			return ptr
+		}(), func() unsafe.Pointer {
+			ptr := unsafe.Pointer(&key1)
+			__p.Pin(ptr)
+			return ptr
+		}(), func() unsafe.Pointer {
+			ptr := unsafe.Pointer(result)
 			__p.Pin(ptr)
 			return ptr
 		}())
