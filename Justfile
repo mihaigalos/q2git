@@ -30,7 +30,9 @@ test: deploy
 [group('environment')]
 up:
     #!/bin/bash
-    if wash get hosts 2>/dev/null | grep -q .; then
+    # Strip ANSI escape codes before grepping for an actual host ID (40+ uppercase
+    # alphanumeric chars) — color codes break consecutive character matching
+    if wash get hosts 2>/dev/null | sed $'s/\033\[[0-9;]*[mK]//g' | grep -qE '[A-Z0-9]{40,}'; then
         echo "wasmCloud host already running, skipping."
     else
         wash up -d
