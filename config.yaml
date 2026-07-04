@@ -1,0 +1,27 @@
+settings:
+  write_mode: "append"
+
+source:
+  method: "GET"
+  headers:
+    User-Agent: "q2git/1.0"
+    Accept: "application/json"
+
+queries:
+  - name: "power-consumption"
+    description: "Daily power consumption difference (scalar query)"
+    url: "https://cloud.galos.one/prometheus/api/v1/query?query=round%28%28sum%28sum_over_time%28sunwoda_pv1_power_w%5B22h%5D%29%29%2Bsum%28sum_over_time%28sunwoda_pv2_power_w%5B22h%5D%29%29%29*30%2F3600000%2C0.01%29"
+    query: |
+      if .status == "success" and .data.resultType == "vector" and (.data.result | length) >= 1 then
+        "\n" + (.data.result[0].value[0] | tonumber | strftime("%Y-%m-%d %H:%M:%S")) + ", " + (if .data.result[0].value[1] == "NaN" then "No Data" else (.data.result[0].value[1] | tostring) end)
+      else
+        error("Invalid response format")
+      end
+
+destination:
+  api_url: "https://api.github.com"
+  owner: "mihaigalos"
+  repo: "test"
+  branch: "main"
+  output_path: "data_powerreadings.csv"
+  commit_message: "Test from q2git"
