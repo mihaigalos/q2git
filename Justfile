@@ -63,9 +63,21 @@ build:
 config:
     wash config put q2git-config "Q2GIT_CONFIG=$(cat config.yaml)"
 
+# Push wasmCloud secrets (reads from src/secrets.yaml — gitignored, never committed)
+[group('app')]
+secrets:
+    #!/bin/bash
+    token=$(cat src/secrets.yaml | yq '.destination.token' -r)
+    username=$(cat src/secrets.yaml | yq '.source.username' -r)
+    password=$(cat src/secrets.yaml | yq '.source.password' -r)
+    wash config put q2git-secrets \
+        "Q2GIT_GITHUB_TOKEN=${token}" \
+        "Q2GIT_SOURCE_USERNAME=${username}" \
+        "Q2GIT_SOURCE_PASSWORD=${password}"
+
 # Deploy the application
 [group('app')]
-deploy: build config
+deploy: build config secrets
     wash app deploy wadm.yaml
 
 # Push the built component to an OCI registry

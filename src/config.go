@@ -47,7 +47,8 @@ type Config struct {
 }
 
 // LoadConfig reads Q2GIT_CONFIG (YAML) from wasmCloud named config, then overlays
-// secrets from Q2GIT_GITHUB_TOKEN, Q2GIT_SOURCE_USERNAME, and Q2GIT_SOURCE_PASSWORD.
+// secrets from Q2GIT_GITHUB_TOKEN, Q2GIT_SOURCE_USERNAME, and Q2GIT_SOURCE_PASSWORD
+// via the wasmcloud:secrets interface.
 func LoadConfig() (*Config, error) {
 	raw := wasmcloud.GetConfigOrDefault("Q2GIT_CONFIG", "")
 	if raw == "" {
@@ -59,15 +60,21 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("failed to parse Q2GIT_CONFIG: %w", err)
 	}
 
-	if token := wasmcloud.GetConfigOrDefault("Q2GIT_GITHUB_TOKEN", ""); token != "" {
+	if token, err := wasmcloud.SecretGetAndReveal("Q2GIT_GITHUB_TOKEN"); err == nil {
+		cfg.Destination.Token = string(token)
+	} else if token := wasmcloud.GetConfigOrDefault("Q2GIT_GITHUB_TOKEN", ""); token != "" {
 		cfg.Destination.Token = token
 	}
 
-	if username := wasmcloud.GetConfigOrDefault("Q2GIT_SOURCE_USERNAME", ""); username != "" {
+	if username, err := wasmcloud.SecretGetAndReveal("Q2GIT_SOURCE_USERNAME"); err == nil {
+		cfg.Source.Auth.Username = string(username)
+	} else if username := wasmcloud.GetConfigOrDefault("Q2GIT_SOURCE_USERNAME", ""); username != "" {
 		cfg.Source.Auth.Username = username
 	}
 
-	if password := wasmcloud.GetConfigOrDefault("Q2GIT_SOURCE_PASSWORD", ""); password != "" {
+	if password, err := wasmcloud.SecretGetAndReveal("Q2GIT_SOURCE_PASSWORD"); err == nil {
+		cfg.Source.Auth.Password = string(password)
+	} else if password := wasmcloud.GetConfigOrDefault("Q2GIT_SOURCE_PASSWORD", ""); password != "" {
 		cfg.Source.Auth.Password = password
 	}
 
