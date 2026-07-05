@@ -1,7 +1,7 @@
 name = "q2git"
 language = "tinygo"
 type = "component"
-version = "0.2.1"
+version = "0.2.2"
 path = "src"
 wit = "wit"
 build = "build"
