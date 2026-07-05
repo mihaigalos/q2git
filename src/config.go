@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
 
-	"go.wasmcloud.dev/component/wasmcloud"
 	"gopkg.in/yaml.v3"
 )
 
@@ -46,13 +46,14 @@ type Config struct {
 	Queries     []QueryConfig     `yaml:"queries"`
 }
 
-// LoadConfig reads Q2GIT_CONFIG (YAML) from wasmCloud named config, then overlays
-// secrets from Q2GIT_GITHUB_TOKEN, Q2GIT_SOURCE_USERNAME, and Q2GIT_SOURCE_PASSWORD
-// via the wasmcloud:secrets interface.
+// LoadConfig reads Q2GIT_CONFIG (YAML) from the environment, then overlays
+// secrets from Q2GIT_GITHUB_TOKEN, Q2GIT_SOURCE_USERNAME, and Q2GIT_SOURCE_PASSWORD.
+// The wasmCloud host injects configFrom / secretFrom values as plain env vars
+// via wasi:cli/environment, so os.Getenv works without any interface change.
 func LoadConfig() (*Config, error) {
-	raw := wasmcloud.GetConfigOrDefault("Q2GIT_CONFIG", "")
+	raw := os.Getenv("Q2GIT_CONFIG")
 	if raw == "" {
-		return nil, fmt.Errorf("Q2GIT_CONFIG is not set in wasmCloud config")
+		return nil, fmt.Errorf("Q2GIT_CONFIG environment variable is not set")
 	}
 
 	var cfg Config
@@ -60,21 +61,15 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("failed to parse Q2GIT_CONFIG: %w", err)
 	}
 
-	if token, err := wasmcloud.SecretGetAndReveal("Q2GIT_GITHUB_TOKEN"); err == nil {
-		cfg.Destination.Token = string(token)
-	} else if token := wasmcloud.GetConfigOrDefault("Q2GIT_GITHUB_TOKEN", ""); token != "" {
+	if token := os.Getenv("Q2GIT_GITHUB_TOKEN"); token != "" {
 		cfg.Destination.Token = token
 	}
 
-	if username, err := wasmcloud.SecretGetAndReveal("Q2GIT_SOURCE_USERNAME"); err == nil {
-		cfg.Source.Auth.Username = string(username)
-	} else if username := wasmcloud.GetConfigOrDefault("Q2GIT_SOURCE_USERNAME", ""); username != "" {
+	if username := os.Getenv("Q2GIT_SOURCE_USERNAME"); username != "" {
 		cfg.Source.Auth.Username = username
 	}
 
-	if password, err := wasmcloud.SecretGetAndReveal("Q2GIT_SOURCE_PASSWORD"); err == nil {
-		cfg.Source.Auth.Password = string(password)
-	} else if password := wasmcloud.GetConfigOrDefault("Q2GIT_SOURCE_PASSWORD", ""); password != "" {
+	if password := os.Getenv("Q2GIT_SOURCE_PASSWORD"); password != "" {
 		cfg.Source.Auth.Password = password
 	}
 

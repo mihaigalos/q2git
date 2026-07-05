@@ -219,7 +219,7 @@ func githubAPIRequest(method, url, token string, payload, response interface{}) 
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-	req.Header.Set("User-Agent", "q2git")
+	req.Header.Set("User-Agent", "q2git/1.0")
 
 	if payload != nil {
 		req.Header.Set("Content-Type", "application/json")
