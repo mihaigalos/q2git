@@ -53,8 +53,8 @@ must come from `Q2GIT_GITHUB_TOKEN`.
 ## Local development
 
 ```bash
-export Q2GIT_CONFIG="$(cat config.yaml)"
-export Q2GIT_GITHUB_TOKEN=github_pat_...
+just config
+just secrets
 just dev
 ```
 
