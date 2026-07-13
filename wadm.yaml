@@ -3,13 +3,13 @@ kind: Application
 metadata:
   name: "q2git"
   annotations:
-    description: "HTTP hello world demo in Golang (TinyGo), using the WebAssembly Component Model and WebAssembly Interfaces Types (WIT)"
-    wasmcloud.dev/authors: wasmCloud team
-    wasmcloud.dev/source-url: https://github.com/wasmCloud/wasmCloud/blob/main/examples/golang/components/http-hello-world/wadm.yaml
-    wasmcloud.dev/readme-md-url: https://github.com/wasmCloud/wasmCloud/blob/main/examples/golang/components/http-hello-world/README.md
-    wasmcloud.dev/homepage: https://github.com/wasmCloud/wasmCloud/tree/main/examples/golang/components/http-hello-world
+    description: "🔦 Query a remote API, jq filter, commit to a git repo. "
+    wasmcloud.dev/authors: Mihai Galos
+    wasmcloud.dev/source-url: https://github.com/mihaigalos/q2git/blob/main/wadm.yaml
+    wasmcloud.dev/readme-md-url: https://github.com/mihaigalos/q2git/blob/main/README.md
+    wasmcloud.dev/homepage: https://github.com/mihaigalos/q2git
     wasmcloud.dev/categories: |
-      http,outgoing-http,http-server,tinygo,golang,example
+      http,outgoing-http,http-server,tinygo,golang,jq
 spec:
   components:
     - name: http-component
