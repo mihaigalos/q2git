@@ -5,6 +5,8 @@ import (
 	"os"
 
 	"gopkg.in/yaml.v3"
+
+	wasiconfig "q2git/gen/wasi/config/runtime"
 )
 
 type AuthConfig struct {
@@ -46,14 +48,28 @@ type Config struct {
 	Queries     []QueryConfig     `yaml:"queries"`
 }
 
-// LoadConfig reads Q2GIT_CONFIG (YAML) from the environment, then overlays
+// getConfigValue reads a key from the environment (wasmCloud v2 localResources.environment),
+// falling back to wasi:config/runtime (wash / wasmCloud v1 named config).
+func getConfigValue(key string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	res := wasiconfig.Get(key)
+	if res.IsErr() {
+		return ""
+	}
+	if v := res.OK().Some(); v != nil {
+		return *v
+	}
+	return ""
+}
+
+// LoadConfig reads Q2GIT_CONFIG (YAML) from wasmCloud runtime config, then overlays
 // secrets from Q2GIT_GITHUB_TOKEN, Q2GIT_SOURCE_USERNAME, and Q2GIT_SOURCE_PASSWORD.
-// The wasmCloud host injects configFrom / secretFrom values as plain env vars
-// via wasi:cli/environment, so os.Getenv works without any interface change.
 func LoadConfig() (*Config, error) {
-	raw := os.Getenv("Q2GIT_CONFIG")
+	raw := getConfigValue("Q2GIT_CONFIG")
 	if raw == "" {
-		return nil, fmt.Errorf("Q2GIT_CONFIG environment variable is not set")
+		return nil, fmt.Errorf("Q2GIT_CONFIG is not set in wasmCloud runtime config")
 	}
 
 	var cfg Config
@@ -61,15 +77,15 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("failed to parse Q2GIT_CONFIG: %w", err)
 	}
 
-	if token := os.Getenv("Q2GIT_GITHUB_TOKEN"); token != "" {
+	if token := getConfigValue("Q2GIT_GITHUB_TOKEN"); token != "" {
 		cfg.Destination.Token = token
 	}
 
-	if username := os.Getenv("Q2GIT_SOURCE_USERNAME"); username != "" {
+	if username := getConfigValue("Q2GIT_SOURCE_USERNAME"); username != "" {
 		cfg.Source.Auth.Username = username
 	}
 
-	if password := os.Getenv("Q2GIT_SOURCE_PASSWORD"); password != "" {
+	if password := getConfigValue("Q2GIT_SOURCE_PASSWORD"); password != "" {
 		cfg.Source.Auth.Password = password
 	}
 

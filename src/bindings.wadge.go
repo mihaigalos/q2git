@@ -12,6 +12,7 @@ import (
 	go_wasmcloud_dev__component__gen__wasi__io__poll "go.wasmcloud.dev/component/gen/wasi/io/poll"
 	go_wasmcloud_dev__component__gen__wasi__io__streams "go.wasmcloud.dev/component/gen/wasi/io/streams"
 	wadge "go.wasmcloud.dev/wadge"
+	q2git__gen__wasi__config__runtime "q2git/gen/wasi/config/runtime"
 	"runtime"
 	"unsafe"
 )
@@ -119,6 +120,46 @@ func wasmimport_SubscribeInstant(when0 uint64) (result0 uint32) {
 			return ptr
 		}(), func() unsafe.Pointer {
 			ptr := unsafe.Pointer(&result0)
+			__p.Pin(ptr)
+			return ptr
+		}())
+	}); __err != nil {
+		wadge.CurrentErrorHandler()(__err)
+	}
+	return
+}
+
+//go:linkname wasmimport_Get q2git/gen/wasi/config/runtime.wasmimport_Get
+func wasmimport_Get(key0 *uint8, key1 uint32, result *go_bytecodealliance_org__cm.Result[q2git__gen__wasi__config__runtime.OptionStringShape, go_bytecodealliance_org__cm.Option[string], q2git__gen__wasi__config__runtime.ConfigError]) {
+	var __p runtime.Pinner
+	defer __p.Unpin()
+	if __err := wadge.WithCurrentInstance(func(__instance *wadge.Instance) error {
+		return __instance.Call("wasi:config/runtime@0.2.0-draft", "get", func() unsafe.Pointer {
+			ptr := unsafe.Pointer(key0)
+			__p.Pin(ptr)
+			return ptr
+		}(), func() unsafe.Pointer {
+			ptr := unsafe.Pointer(&key1)
+			__p.Pin(ptr)
+			return ptr
+		}(), func() unsafe.Pointer {
+			ptr := unsafe.Pointer(result)
+			__p.Pin(ptr)
+			return ptr
+		}())
+	}); __err != nil {
+		wadge.CurrentErrorHandler()(__err)
+	}
+	return
+}
+
+//go:linkname wasmimport_GetAll q2git/gen/wasi/config/runtime.wasmimport_GetAll
+func wasmimport_GetAll(result *go_bytecodealliance_org__cm.Result[q2git__gen__wasi__config__runtime.ConfigErrorShape, go_bytecodealliance_org__cm.List[[2]string], q2git__gen__wasi__config__runtime.ConfigError]) {
+	var __p runtime.Pinner
+	defer __p.Unpin()
+	if __err := wadge.WithCurrentInstance(func(__instance *wadge.Instance) error {
+		return __instance.Call("wasi:config/runtime@0.2.0-draft", "get-all", func() unsafe.Pointer {
+			ptr := unsafe.Pointer(result)
 			__p.Pin(ptr)
 			return ptr
 		}())
